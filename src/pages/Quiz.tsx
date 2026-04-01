@@ -2,6 +2,8 @@ import { useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductDetailsModal from '../components/ProductDetailsModal';
+import { getProductById } from '../data/products';
+import typhoidImage from '../assets/typhoid.avif';
 
 interface QuizState {
   step: number;
@@ -110,32 +112,49 @@ const Quiz = () => {
   ];
 
   const getRecommendedTest = () => {
-    const testMap: Record<string, any> = {
-      'syphilis': { name: 'Syphilis', image: '/test-kits/syphilis.png', description: 'A rapid test for detecting Syphilis antibodies.' },
-      'gonorrhea': { name: 'Gonorrhea', image: '/test-kits/gonorrhea.png', description: 'An at-home test for detecting Gonorrhea infection.' },
-      'hiv': { name: 'HIV', image: '/test-kits/hiv.png', description: 'A confidential at-home HIV test for detecting antibodies.' },
-      'chlamydia': { name: 'Chlamydia', image: '/test-kits/chlamydia.png', description: 'A simple test for detecting Chlamydia infection.' },
-      'typhoid': { name: 'Typhoid', image: '/test-kits/typhoid.png', description: 'An at-home rapid test for detecting Salmonella typhi antibodies.' },
-      'uti': { name: 'Urinary Tract Infection', image: '/test-kits/uti.png', description: 'Test for detecting urinary tract infections.' },
-      'ulcer': { name: 'Stomach Ulcer', image: '/test-kits/ulcer.png', description: 'An at-home test for detecting H. pylori and ulcer-related markers.' },
-      'hepatitis': { name: 'Hepatitis B', image: '/test-kits/hepatitis.png', description: 'A test for detecting Hepatitis B surface antigens.' },
-      'menopause': { name: 'Menopause', image: '/test-kits/menopause.png', description: 'Hormone level test to confirm menopausal status.' },
-      'vaginal-ph': { name: 'Vaginal pH Infection', image: '/test-kits/vaginal-ph.png', description: 'Test for vaginal pH imbalance and potential infections.' }
+    // Mapping from symptom categories to product IDs in centralized data
+    const testMap: Record<string, string> = {
+      'syphilis': 'syphilis',
+      'gonorrhea': 'gonorrhea',
+      'hiv': 'hiv',
+      'chlamydia': 'chlamydia',
+      'typhoid': 'typhoid',
+      'uti': 'urinary-tract-infection',
+      'ulcer': 'stomach-ulcer',
+      'hepatitis': 'hepatitis-b',
+      'menopause': 'menopause',
+      'vaginal-ph': 'vaginal-ph-infection'
     };
-    return testMap[quizState.symptomCategory] || testMap['typhoid'];
+    
+    const productId = testMap[quizState.symptomCategory];
+    const product = productId ? getProductById(productId) : getProductById('typhoid');
+    
+    if (product) {
+      return {
+        name: product.title,
+        image: product.image,
+        description: product.description
+      };
+    }
+    
+    return {
+      name: 'Typhoid',
+      image: typhoidImage,
+      description: 'An at-home rapid test for detecting Salmonella typhi antibodies.'
+    };
   };
 
   const products: Record<string, any> = {
-    'syphilis': { id: 12, slug: 'syphilis', title: 'Syphilis', price: '₦9,900', description: 'A rapid test for detecting Syphilis antibodies.', fullDescription: 'A comprehensive at-home test for detecting Syphilis antibodies in blood samples.' },
-    'gonorrhea': { id: 11, slug: 'gonorrhea', title: 'Gonorrhea', price: '₦9,900', description: 'An at-home test for detecting Gonorrhea infection.', fullDescription: 'A confidential at-home test for detecting Gonorrhea infection.' },
-    'hiv': { id: 6, slug: 'hiv', title: 'HIV', price: '₦8,000', description: 'A confidential at-home HIV test.', fullDescription: 'A confidential at-home test for detecting HIV antibodies in blood samples.' },
-    'chlamydia': { id: 13, slug: 'chlamydia', title: 'Chlamydia', price: '₦9,900', description: 'A simple test for detecting Chlamydia infection.', fullDescription: 'A simple test for detecting Chlamydia infection.' },
-    'typhoid': { id: 5, slug: 'typhoid', title: 'Typhoid', price: '₦21,000', description: 'A test for detecting Salmonella typhi antibodies.', fullDescription: 'An at-home rapid test for detecting Salmonella typhi antibodies in blood samples.' },
-    'uti': { id: 7, slug: 'uti', title: 'Urinary Tract Infection', price: '₦25,000', description: 'Test for detecting urinary tract infections.', fullDescription: 'An at-home test to detect bacterial infections in the urinary tract.' },
-    'ulcer': { id: 2, slug: 'stomach-ulcer', title: 'Stomach Ulcer', price: '₦23,000', description: 'Test for detecting H. pylori infection.', fullDescription: 'An at-home test to detect an active Helicobacter pylori (H. pylori) infection from a stool sample.' },
-    'hepatitis': { id: 3, slug: 'hepatitis-b', title: 'Hepatitis B', price: '₦9,900', description: 'Test for detecting Hepatitis B.', fullDescription: 'An at-home rapid test that checks for Hepatitis B Surface Antigen (HBsAg) in a blood sample.' },
-    'menopause': { id: 14, slug: 'menopause', title: 'Menopause', price: '₦12,000', description: 'Hormone level test to confirm menopausal status.', fullDescription: 'Hormone level test to confirm menopausal status.' },
-    'vaginal-ph': { id: 10, slug: 'vaginal-ph', title: 'Vaginal pH Infection', price: '₦9,900', description: 'Test for vaginal pH imbalance.', fullDescription: 'Test for vaginal pH imbalance and potential infections at home.' }
+    'syphilis': getProductById('syphilis'),
+    'gonorrhea': getProductById('gonorrhea'),
+    'hiv': getProductById('hiv'),
+    'chlamydia': getProductById('chlamydia'),
+    'typhoid': getProductById('typhoid'),
+    'uti': getProductById('urinary-tract-infection'),
+    'ulcer': getProductById('stomach-ulcer'),
+    'hepatitis': getProductById('hepatitis-b'),
+    'menopause': getProductById('menopause'),
+    'vaginal-ph': getProductById('vaginal-ph-infection')
   };
 
   const handleNext = () => {
@@ -341,14 +360,12 @@ const Quiz = () => {
                 Based on your responses, this test is most suitable for your needs.
               </p>
 
-              {/* Product Image Placeholder */}
-              <div className="bg-[#EDEDED] aspect-[16/10] rounded-xl flex items-center justify-center mb-6">
-                <div className="text-center px-6">
-                  <div className="bg-white/95 backdrop-blur-sm rounded-lg p-6 max-w-xs">
-                    <p className="text-lg font-bold text-gray-700 mb-2 font-body">{quizState.recommendedTest.name}</p>
-                    <p className="text-sm text-gray-500 font-body">Test Kit Image</p>
-                  </div>
-                </div>
+              <div className="bg-[#EDEDED] aspect-[16/10] rounded-xl overflow-hidden mb-6">
+                <img
+                  src={quizState.recommendedTest.image}
+                  alt={`${quizState.recommendedTest.name} test kit`}
+                  className="w-full h-full object-cover"
+                />
               </div>
 
               <h3 className="font-body text-2xl font-bold text-[#000000] mb-3">

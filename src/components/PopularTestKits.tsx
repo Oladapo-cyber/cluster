@@ -1,48 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { CATEGORIES, PRODUCTS, type Category } from '../data/products';
 
 const PopularTestKits = () => {
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeFilter, setActiveFilter] = useState<Category>('All');
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const filters = ['All', 'General Health', 'Sexual Health', 'Men', 'Women', 'Organ Health'];
-
-  const products = [
-    {
-      id: 1,
-      slug: 'diabetes',
-      title: "Diabetes",
-      description: "An at-home test that measures your average blood sugar (glucose) levels over the past 2-3 months to",
-      price: "₦17,000",
-      category: "General Health"
-    },
-    {
-      id: 2,
-      slug: 'stomach-ulcer',
-      title: "Stomach Ulcer",
-      description: "An at-home test to detect an active Helicobacter pylori (H. pylori) infection from a stool sample. H",
-      price: "₦23,000",
-      category: "General Health"
-    },
-    {
-      id: 3,
-      slug: 'hepatitis-b',
-      title: "Hepatitis B",
-      description: "An at-home rapid test that checks for Hepatitis B Surface Antigen (HBsAg) in a blood sample to deter",
-      price: "₦9,900",
-      category: "General Health"
-    },
-    {
-      id: 4,
-      slug: 'cardiac-health',
-      title: "Cardiac health",
-      description: "A rapid blood test that detects troponin, a protein released into the bloodstream when the heart muscle is damaged.",
-      price: "₦25,000",
-      category: "General Health"
-    }
-  ];
+  // Get first 3 products (or filter by category if not All)
+  const displayProducts = activeFilter === 'All' 
+    ? PRODUCTS.slice(0, 3)
+    : PRODUCTS.filter(p => p.categories.includes(activeFilter)).slice(0, 3);
 
   return (
     <section className="py-16 px-4 lg:py-20 bg-white">
@@ -60,7 +29,7 @@ const PopularTestKits = () => {
         {/* Category Filter Pills with Background Container */}
         <div className="bg-[#F5F5F5] rounded-2xl px-3 py-2 mb-12">
           <div className="flex flex-wrap justify-center gap-3">
-            {filters.map((filter) => (
+            {CATEGORIES.map((filter) => (
               <button
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
@@ -78,19 +47,18 @@ const PopularTestKits = () => {
 
         {/* Product Grid - 3 Cards on Desktop, Larger Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
-          {products.slice(0, 3).map((product) => (
+          {displayProducts.map((product) => (
             <div 
               key={product.id} 
               className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
             >
-              {/* Product Image Placeholder - Larger */}
-              <div className="bg-[#E5E7EB] aspect-[4/3] flex items-center justify-center p-8">
-                <div className="text-center">
-                  <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 max-w-xs">
-                    <p className="text-sm text-gray-600 mb-2 font-body">Product Image Placeholder</p>
-                    <p className="text-xs text-gray-400 font-body">Replace with actual {product.title} test kit image</p>
-                  </div>
-                </div>
+              <div className="bg-[#E5E7EB] aspect-[4/3] overflow-hidden">
+                <img
+                  src={product.image}
+                  alt={`${product.title} test kit`}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
               </div>
 
               {/* Product Info - Larger Padding */}
@@ -108,10 +76,10 @@ const PopularTestKits = () => {
                   onClick={(e) => {
                     e.stopPropagation();
                     addToCart({
-                      id: product.slug,
+                      id: product.id,
                       name: product.title,
                       price: product.price,
-                      image: '/placeholder.png'
+                      image: product.image
                     });
                   }}
                 >

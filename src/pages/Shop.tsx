@@ -3,140 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useCart } from '../context/CartContext';
+import { CATEGORIES, filterProducts, type Category } from '../data/products';
 
 const Shop = () => {
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeFilter, setActiveFilter] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const filters = ['All', 'General Health', 'Sexual Health', 'Men', 'Women', 'Organ Health'];
-
-  const products = [
-    {
-      id: 1,
-      slug: 'diabetes',
-      title: "Diabetes",
-      description: "An at-home test that measures your average blood sugar (glucose) levels over the past 2-3 months to",
-      price: "₦17,000",
-      category: "General Health",
-      available: true
-    },
-    {
-      id: 2,
-      slug: 'stomach-ulcer',
-      title: "Stomach Ulcer",
-      description: "An at-home test to detect an active Helicobacter pylori (H. pylori) infection from a stool sample. H",
-      price: "₦23,000",
-      category: "General Health",
-      available: true
-    },
-    {
-      id: 3,
-      slug: 'hepatitis-b',
-      title: "Hepatitis B",
-      description: "An at-home rapid test that checks for Hepatitis B Surface Antigen (HBsAg) in a blood sample to deter",
-      price: "₦9,900",
-      category: "General Health",
-      available: true
-    },
-    {
-      id: 4,
-      slug: 'cardiac-health',
-      title: "Cardiac health",
-      description: "A rapid blood test that detects troponin, a protein released into the bloodstream when the heart muscle is damaged.",
-      price: "₦25,000",
-      category: "General Health",
-      available: true
-    },
-    {
-      id: 5,
-      slug: 'typhoid',
-      title: "Typhoid",
-      description: "An at-home rapid test for detecting Salmonella typhi antibodies in blood samples.",
-      price: "₦21,000",
-      category: "General Health",
-      available: true
-    },
-    {
-      id: 6,
-      slug: 'hiv',
-      title: "HIV",
-      description: "A confidential at-home test for detecting HIV antibodies in blood samples.",
-      price: "₦8,000",
-      category: "Sexual Health",
-      available: true
-    },
-    {
-      id: 7,
-      slug: 'uti',
-      title: "Urinary Tract Infection",
-      description: "An at-home test to detect bacterial infections in the urinary tract.",
-      price: "₦25,000",
-      category: "General Health",
-      available: true
-    },
-    {
-      id: 8,
-      slug: 'pregnancy',
-      title: "Pregnancy",
-      description: "A reliable at-home pregnancy test for early detection.",
-      price: "₦9,570",
-      category: "Women",
-      available: true
-    },
-    {
-      id: 9,
-      slug: 'ovulation',
-      title: "Ovulation",
-      description: "Track your fertile window with this at-home ovulation test.",
-      price: "₦9,900",
-      category: "Women",
-      available: true
-    },
-    {
-      id: 10,
-      slug: 'vaginal-ph',
-      title: "Vaginal pH Infection",
-      description: "Test for vaginal pH imbalance and potential infections at home.",
-      price: "₦9,900",
-      category: "Women",
-      available: true
-    },
-    {
-      id: 11,
-      slug: 'gonorrhea',
-      title: "Gonorrhea",
-      description: "A confidential at-home test for detecting Gonorrhea infection.",
-      price: "₦9,900",
-      category: "Sexual Health",
-      available: true
-    },
-    {
-      id: 12,
-      title: "Kidney",
-      description: "Comprehensive kidney function test.",
-      price: "Coming Soon",
-      category: "Organ Health",
-      available: false
-    },
-    {
-      id: 13,
-      title: "Prostate",
-      description: "At-home prostate health screening test.",
-      price: "Coming Soon",
-      category: "Men",
-      available: false
-    }
-  ];
-
-  // Filter products based on category and search query
-  const filteredProducts = products.filter(product => {
-    const matchesCategory = activeFilter === 'All' || product.category === activeFilter;
-    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // Filter products based on category and search query using centralized data
+  const filteredProducts = filterProducts(searchQuery, activeFilter);
 
   return (
     <div className="min-h-screen bg-white">
@@ -178,7 +54,7 @@ const Shop = () => {
           {/* Category Filter Pills */}
           <div className="bg-[#F5F5F5] rounded-2xl px-3 py-2 mb-12">
             <div className="flex flex-wrap justify-center gap-3">
-              {filters.map((filter) => (
+              {CATEGORIES.map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
@@ -199,17 +75,16 @@ const Shop = () => {
             {filteredProducts.map((product) => (
               <div 
                 key={product.id} 
-                onClick={() => product.slug && navigate(`/product/${product.slug}`)}
+                onClick={() => navigate(`/product/${product.id}`)}
                 className="bg-white rounded-xl overflow-hidden border border-[#E4E1E1] hover:shadow-md transition-shadow flex flex-col min-h-[450px] cursor-pointer"
               >
-                {/* Product Image Placeholder */}
-                <div className="bg-[#EDEDED] aspect-[16/10] flex items-center justify-center">
-                  <div className="text-center px-6">
-                    <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4 max-w-xs">
-                      <p className="text-sm text-gray-600 mb-1 font-body">Product Image</p>
-                      <p className="text-xs text-gray-400 font-body">{product.title} test kit</p>
-                    </div>
-                  </div>
+                <div className="bg-[#EDEDED] aspect-[16/10] overflow-hidden">
+                  <img
+                    src={product.image}
+                    alt={`${product.title} test kit`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
                 </div>
 
                 {/* Product Info - Flex grow to push button to bottom */}
@@ -227,10 +102,10 @@ const Shop = () => {
                       onClick={(e) => {
                         e.stopPropagation();
                         addToCart({
-                          id: product.slug || String(product.id),
+                          id: product.id,
                           name: product.title,
                           price: product.price,
-                          image: '/placeholder.png'
+                          image: product.image
                         });
                       }}
                       className="w-full bg-[#45AAB8] hover:bg-[#3d98a5] text-white font-body font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-between mt-auto"

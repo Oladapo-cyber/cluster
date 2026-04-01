@@ -8,6 +8,7 @@ interface ProductDetailsModalProps {
     slug: string;
     title: string;
     price: string;
+    image?: string;
     description: string;
     fullDescription?: string;
     instruction?: string;
@@ -56,15 +57,25 @@ const ProductDetailsModal = ({ isOpen, onClose, product }: ProductDetailsModalPr
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
               {/* Left: Product Image */}
-              <div className="bg-[#EDEDED] aspect-square rounded-xl flex items-center justify-center">
-                <div className="text-center px-6">
-                  <div className="bg-white/95 backdrop-blur-sm rounded-lg p-6 max-w-xs">
-                    <p className="text-lg font-bold text-gray-700 mb-2 font-body">
-                      {product.title}
-                    </p>
-                    <p className="text-sm text-gray-500 font-body">Test Kit Image</p>
+              <div className="bg-[#EDEDED] aspect-square rounded-xl overflow-hidden">
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={`${product.title} test kit`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-center px-6">
+                      <div className="bg-white/95 backdrop-blur-sm rounded-lg p-6 max-w-xs">
+                        <p className="text-lg font-bold text-gray-700 mb-2 font-body">
+                          {product.title}
+                        </p>
+                        <p className="text-sm text-gray-500 font-body">Image coming soon</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Right: Product Info */}
