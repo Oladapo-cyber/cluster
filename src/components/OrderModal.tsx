@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { ApiError } from '../services/api';
+import { createCheckoutOrder, fetchPaystackPublicKey, verifyPaystackPayment } from '../services/checkout';
+import { launchPaystackCheckout } from '../services/paystack';
+import { fetchProducts } from '../services/products';
 
 interface OrderModalProps {
   isOpen: boolean;
@@ -8,7 +13,8 @@ interface OrderModalProps {
 }
 
 const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
-  const { items } = useCart();
+  const { items, clearCart } = useCart();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -18,6 +24,8 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   // Prevent scroll when modal is open
   useEffect(() => {
@@ -40,15 +48,85 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
   }, 0);
   const formattedTotal = `₦${subtotal.toLocaleString()}`;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (items.length === 0) {
+      setErrorMessage('Your cart is empty. Add at least one item before checkout.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setInfoMessage(null);
+
     setIsLoading(true);
-    // Mimic API call
-    setTimeout(() => {
-      setIsLoading(false);
-      alert('Order Placed! Integration pending backend.');
+
+    try {
+      const productCatalog = await fetchProducts();
+      const backendIdBySlug = new Map(
+        productCatalog
+          .filter((product) => Boolean(product.backendId))
+          .map((product) => [product.id, product.backendId as string]),
+      );
+
+      const orderItems = items.map((item) => {
+        const fallbackBackendId = backendIdBySlug.get(String(item.id));
+        const productId = item.backendProductId ?? fallbackBackendId;
+
+        if (!productId) {
+          throw new Error(
+            `Could not sync product ID for "${item.name}". Please refresh products and try checkout again.`,
+          );
+        }
+
+        return {
+          product_id: productId,
+          quantity: item.quantity,
+        };
+      });
+
+      const order = await createCheckoutOrder({
+        customer_email: formData.email.trim(),
+        customer_name: formData.fullName.trim(),
+        customer_phone: formData.phone.trim(),
+        delivery_address: `${formData.address.trim()}, Lagos ${formData.location}`,
+        items: orderItems,
+      });
+
+      const publicKey = await fetchPaystackPublicKey();
+      const paymentResult = await launchPaystackCheckout({
+        publicKey,
+        email: formData.email.trim(),
+        amountKobo: order.total_kobo,
+        reference: order.payment_reference,
+        firstName: formData.fullName.trim(),
+      });
+
+      if (paymentResult.status === 'cancelled') {
+        setInfoMessage('Payment was cancelled. Your order is pending payment and can be retried.');
+        return;
+      }
+
+      const verification = await verifyPaystackPayment(paymentResult.reference);
+      if (!verification.paid) {
+        setErrorMessage('Payment could not be verified. Please contact support with your transaction reference.');
+        return;
+      }
+
+      clearCart();
       onClose();
-    }, 1500);
+      navigate(`/checkout/success?reference=${encodeURIComponent(verification.reference)}`);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      } else if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage('Checkout failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const itemSummary = items.map(i => i.name).join(', ');
@@ -94,6 +172,18 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
             {/* Delivery Form */}
             <div className="space-y-4">
               <h3 className="font-bold text-lg text-[#101828] pt-2">Delivery Info:</h3>
+
+              {errorMessage && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {errorMessage}
+                </div>
+              )}
+
+              {infoMessage && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  {infoMessage}
+                </div>
+              )}
               
               <input
                 type="text"
