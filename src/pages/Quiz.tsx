@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductDetailsModal from '../components/ProductDetailsModal';
-import { getProductById } from '../data/products';
+import { PRODUCTS, type Product } from '../data/products';
+import { fetchProducts } from '../services/products';
 import typhoidImage from '../assets/typhoid.avif';
 
 interface QuizState {
@@ -17,6 +19,8 @@ interface QuizState {
   } | null;
 }
 
+const defaultCatalog = Object.fromEntries(PRODUCTS.map((product) => [product.id, product]));
+
 const Quiz = () => {
   const [quizState, setQuizState] = useState<QuizState>({
     step: 1,
@@ -27,6 +31,21 @@ const Quiz = () => {
   });
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [catalog, setCatalog] = useState<Record<string, Product>>(defaultCatalog);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void fetchProducts().then((products) => {
+      if (isMounted) {
+        setCatalog(Object.fromEntries(products.map((product) => [product.id, product])));
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const symptomCategories = [
     { value: 'syphilis', label: 'Genital sore, Rash on Palms/Soles, Swollen nodes, Anal symptoms, Sore Throat after sex' },
@@ -127,7 +146,7 @@ const Quiz = () => {
     };
     
     const productId = testMap[quizState.symptomCategory];
-    const product = productId ? getProductById(productId) : getProductById('typhoid');
+    const product = productId ? catalog[productId] : catalog.typhoid;
     
     if (product) {
       return {
@@ -144,30 +163,30 @@ const Quiz = () => {
     };
   };
 
-  const products: Record<string, any> = {
-    'syphilis': getProductById('syphilis'),
-    'gonorrhea': getProductById('gonorrhea'),
-    'hiv': getProductById('hiv'),
-    'chlamydia': getProductById('chlamydia'),
-    'typhoid': getProductById('typhoid'),
-    'uti': getProductById('urinary-tract-infection'),
-    'ulcer': getProductById('stomach-ulcer'),
-    'hepatitis': getProductById('hepatitis-b'),
-    'menopause': getProductById('menopause'),
-    'vaginal-ph': getProductById('vaginal-ph-infection')
+  const products: Record<string, Product | undefined> = {
+    'syphilis': catalog.syphilis,
+    'gonorrhea': catalog.gonorrhea,
+    'hiv': catalog.hiv,
+    'chlamydia': catalog.chlamydia,
+    'typhoid': catalog.typhoid,
+    'uti': catalog['urinary-tract-infection'],
+    'ulcer': catalog['stomach-ulcer'],
+    'hepatitis': catalog['hepatitis-b'],
+    'menopause': catalog.menopause,
+    'vaginal-ph': catalog['vaginal-ph-infection']
   };
 
   const handleNext = () => {
     if (quizState.step === 1 && !quizState.symptomCategory) {
-      alert('Please select a symptom category');
+      toast.error('Please select a symptom category');
       return;
     }
     if (quizState.step === 2 && quizState.step2Selections.length === 0) {
-      alert('Please select at least one option');
+      toast.error('Please select at least one option');
       return;
     }
     if (quizState.step === 3 && quizState.step3Selections.length === 0) {
-      alert('Please select at least one option');
+      toast.error('Please select at least one option');
       return;
     }
 

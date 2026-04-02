@@ -1,17 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { CATEGORIES, PRODUCTS, type Category } from '../data/products';
+import { CATEGORIES, PRODUCTS, type Category, type Product } from '../data/products';
+import { fetchFeaturedProducts } from '../services/products';
 
 const PopularTestKits = () => {
   const [activeFilter, setActiveFilter] = useState<Category>('All');
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  // Get first 3 products (or filter by category if not All)
-  const displayProducts = activeFilter === 'All' 
-    ? PRODUCTS.slice(0, 3)
-    : PRODUCTS.filter(p => p.categories.includes(activeFilter)).slice(0, 3);
+  useEffect(() => {
+    let isMounted = true;
+
+    void fetchFeaturedProducts(activeFilter).then((nextProducts) => {
+      if (isMounted) {
+        setProducts(nextProducts);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeFilter]);
+
+  const displayProducts = activeFilter === 'All'
+    ? products.slice(0, 3)
+    : products.filter((product) => product.categories.includes(activeFilter)).slice(0, 3);
 
   return (
     <section className="py-16 px-4 lg:py-20 bg-white">
@@ -77,6 +92,7 @@ const PopularTestKits = () => {
                     e.stopPropagation();
                     addToCart({
                       id: product.id,
+                      backendProductId: product.backendId,
                       name: product.title,
                       price: product.price,
                       image: product.image

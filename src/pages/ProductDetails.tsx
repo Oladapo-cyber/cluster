@@ -1,17 +1,42 @@
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { getProductById } from '../data/products';
+import { PRODUCTS, type Product } from '../data/products';
+import { fetchProductById } from '../services/products';
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  
-  const product = id ? getProductById(id) : undefined;
+  const [product, setProduct] = useState<Product | undefined>(() => (id ? PRODUCTS.find((item) => item.id === id) : undefined));
+  const [hasLoaded, setHasLoaded] = useState(false);
 
-  if (!product) {
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!id) {
+      setProduct(undefined);
+      setHasLoaded(true);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    void fetchProductById(id).then((nextProduct) => {
+      if (isMounted) {
+        setProduct(nextProduct);
+        setHasLoaded(true);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  if (hasLoaded && !product) {
     return (
       <div className="min-h-screen bg-white">
         <Header />
@@ -31,10 +56,25 @@ const ProductDetails = () => {
     );
   }
 
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Header />
+        <main className="py-16 px-4">
+          <div className="container mx-auto max-w-4xl text-center">
+            <p className="font-body text-lg text-[#4B5563]">Loading product...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   const handleAddToCart = () => {
     if (product) {
       addToCart({
         id: product.id,
+        backendProductId: product.backendId,
         name: product.title,
         price: product.price,
         image: product.image

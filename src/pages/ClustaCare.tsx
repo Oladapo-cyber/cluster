@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'react-hot-toast';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -12,7 +13,7 @@ const ClustaCare = () => {
     e.preventDefault();
     // Handle form submission
     console.log('Form submitted:', formData);
-    alert('Thank you for submitting your result!');
+    toast.success('Thank you for submitting your result!');
     // Reset form
     setFormData({ testResult: '', whatsappNumber: '' });
   };

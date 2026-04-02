@@ -1,18 +1,50 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useCart } from '../context/CartContext';
-import { CATEGORIES, filterProducts, type Category } from '../data/products';
+import { CATEGORIES, PRODUCTS, type Category, type Product } from '../data/products';
+import { fetchProducts } from '../services/products';
 
 const Shop = () => {
   const [activeFilter, setActiveFilter] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  // Filter products based on category and search query using centralized data
-  const filteredProducts = filterProducts(searchQuery, activeFilter);
+  useEffect(() => {
+    let isMounted = true;
+
+    void fetchProducts().then((nextProducts) => {
+      if (isMounted) {
+        setProducts(nextProducts);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory = activeFilter === 'All' || product.categories.includes(activeFilter);
+
+    if (!matchesCategory) {
+      return false;
+    }
+
+    if (!searchQuery.trim()) {
+      return true;
+    }
+
+    const lowerQuery = searchQuery.toLowerCase();
+    return (
+      product.title.toLowerCase().includes(lowerQuery) ||
+      product.description.toLowerCase().includes(lowerQuery) ||
+      product.fullDescription.toLowerCase().includes(lowerQuery)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -103,6 +135,7 @@ const Shop = () => {
                         e.stopPropagation();
                         addToCart({
                           id: product.id,
+                          backendProductId: product.backendId,
                           name: product.title,
                           price: product.price,
                           image: product.image
