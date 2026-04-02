@@ -4,7 +4,9 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { env } from './config/env.js';
 import { healthRouter } from './routes/health-routes.js';
+import { categoriesRouter } from './routes/categories-routes.js';
 import { productsRouter } from './routes/products-routes.js';
+import { adminProductsRouter } from './routes/admin-products-routes.js';
 import { ordersRouter } from './routes/orders-routes.js';
 import { paymentsRouter } from './routes/payments-routes.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -30,9 +32,11 @@ app.use(
 );
 
 app.use('/api/v1', healthRouter);
+app.use('/api/v1', categoriesRouter);
 app.use('/api/v1', productsRouter);
 app.use('/api/v1', ordersRouter);
 app.use('/api/v1', paymentsRouter);
+app.use('/api/v1/admin', adminProductsRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
