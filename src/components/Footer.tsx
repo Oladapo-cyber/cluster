@@ -26,7 +26,7 @@ const Footer = () => {
             <img
               src={clustaLogo}
               alt="Clusta"
-              className="block h-12 w-auto mb-4 object-contain"
+              className="block h-12 w-auto mb-4 object-contain brightness-0 invert transition-all duration-300"
               loading="lazy"
               decoding="async"
             />

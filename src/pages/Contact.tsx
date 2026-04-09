@@ -134,8 +134,8 @@ const Contact = () => {
                     <p className="font-body text-sm text-[#4B5563] mb-3 leading-relaxed">
                       Questions about products, shipping, or your order? Contact our support team.
                     </p>
-                    <a href="mailto:support@clusta.com" className="font-body text-sm font-medium text-[#45AAB8] hover:underline">
-                      support@clusta.com
+                    <a href="mailto:support@clustadiagnostics.com" className="font-body text-sm font-medium text-[#45AAB8] hover:underline">
+                      support@clustadiagnostics.com
                     </a>
                   </div>
                 </div>
@@ -156,8 +156,8 @@ const Contact = () => {
                     <p className="font-body text-sm text-[#4B5563] mb-3 leading-relaxed">
                       Interested in becoming a distributor or healthcare partner?
                     </p>
-                    <a href="mailto:partnerships@clusta.com" className="font-body text-sm font-medium text-[#45AAB8] hover:underline">
-                      partnerships@clusta.com
+                    <a href="mailto:partnerships@clustadiagnostics.com" className="font-body text-sm font-medium text-[#45AAB8] hover:underline">
+                      partnerships@clustadiagnostics.com
                     </a>
                   </div>
                 </div>
@@ -178,8 +178,8 @@ const Contact = () => {
                     <p className="font-body text-sm text-[#4B5563] mb-3 leading-relaxed">
                       Media inquiries, research collaborations, and press releases.
                     </p>
-                    <a href="mailto:press@clusta.com" className="font-body text-sm font-medium text-[#45AAB8] hover:underline">
-                      press@clusta.com
+                    <a href="mailto:press@clustadiagnostics.com" className="font-body text-sm font-medium text-[#45AAB8] hover:underline">
+                      press@clustadiagnostics.com
                     </a>
                   </div>
                 </div>
