@@ -4,6 +4,7 @@ import LoginModal from './LoginModal';
 import CartPopover from './CartPopover';
 import OrderModal from './OrderModal';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import clustaLogo from '../assets/clustalogo.png';
 
 const Header = () => {
@@ -13,6 +14,7 @@ const Header = () => {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const location = useLocation();
   const { itemCount } = useCart();
+  const { user, logout } = useAuth();
 
   const handleOrderClick = () => {
     setIsCartOpen(false);
@@ -59,12 +61,35 @@ const Header = () => {
                 {link.name}
               </Link>
             ))}
-            <button
-              onClick={() => setIsLoginModalOpen(true)}
-              className="font-body text-[16px] font-normal text-[#484A4A] hover:text-[#45AAB8] transition-colors"
-            >
-              Login
-            </button>
+            {user ? (
+              <>
+                <Link
+                  to="/account"
+                  className={`font-body text-[16px] font-normal transition-colors ${
+                    location.pathname === '/account'
+                      ? 'text-[#45AAB8]'
+                      : 'text-[#484A4A] hover:text-[#45AAB8]'
+                  }`}
+                >
+                  Account
+                </Link>
+                <button
+                  onClick={() => {
+                    void logout();
+                  }}
+                  className="font-body text-[16px] font-normal text-[#484A4A] hover:text-[#45AAB8] transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="font-body text-[16px] font-normal text-[#484A4A] hover:text-[#45AAB8] transition-colors"
+              >
+                Login
+              </button>
+            )}
           </nav>
 
           {/* Cart Icon, Login & Mobile Menu */}
@@ -137,6 +162,38 @@ const Header = () => {
                 </Link>
               ))}
             </div>
+
+            {user ? (
+              <div className="mt-6 flex justify-center items-center gap-6">
+                <Link
+                  to="/account"
+                  className="font-body text-[16px] font-semibold text-[#2276A0] hover:opacity-70 transition-opacity"
+                >
+                  Account
+                </Link>
+                <button
+                  onClick={() => {
+                    void logout();
+                    setIsMenuOpen(false);
+                  }}
+                  className="font-body text-[16px] font-semibold text-[#2276A0] hover:opacity-70 transition-opacity"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => {
+                    setIsLoginModalOpen(true);
+                    setIsMenuOpen(false);
+                  }}
+                  className="font-body text-[16px] font-semibold text-[#2276A0] hover:opacity-70 transition-opacity"
+                >
+                  Login
+                </button>
+              </div>
+            )}
           </nav>
         )}
 

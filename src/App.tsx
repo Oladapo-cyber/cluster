@@ -7,6 +7,8 @@ import ProductDetails from './pages/ProductDetails';
 import AdminLayout from './pages/admin/AdminLayout';
 import ResultsPage from './pages/admin/ResultsPage';
 import ProductsPage from './pages/admin/ProductsPage';
+import RequireAuth from './components/RequireAuth';
+import AccountProfile from './pages/AccountProfile';
 import OrdersPage from './pages/admin/OrdersPage';
 import ContactPage from './pages/admin/ContactPage';
 import ClustaCare from './pages/ClustaCare';
@@ -15,11 +17,13 @@ import About from './pages/About';
 import FAQ from './pages/FAQ';
 import OrderSuccess from './pages/OrderSuccess';
 import { CartProvider } from './context/CartContext';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
-    <CartProvider>
-      <BrowserRouter>
+    <AuthProvider>
+      <CartProvider>
+        <BrowserRouter>
         <Toaster
           position="top-right"
           toastOptions={{
@@ -42,27 +46,36 @@ function App() {
             },
           }}
         />
-        <Routes>
-          <Route path="/" element={<Homepage />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/quiz" element={<Quiz />} />
-          <Route path="/product/:id" element={<ProductDetails />} />
-          <Route path="/admin" element={<Navigate to="/admin/products" replace />} />
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route path="results" element={<ResultsPage />} />
-            <Route path="products" element={<ProductsPage />} />
-            <Route path="orders" element={<OrdersPage />} />
-            <Route path="contact" element={<ContactPage />} />
-          </Route>
-          <Route path="/admin/*" element={<Navigate to="/admin/products" replace />} />
-          <Route path="/clusta-care" element={<ClustaCare />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/faqs" element={<FAQ />} />
-          <Route path="/checkout/success" element={<OrderSuccess />} />
-        </Routes>
-      </BrowserRouter>
-    </CartProvider>
+          <Routes>
+            <Route path="/" element={<Homepage />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route
+              path="/account"
+              element={(
+                <RequireAuth>
+                  <AccountProfile />
+                </RequireAuth>
+              )}
+            />
+            <Route path="/quiz" element={<Quiz />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/admin" element={<Navigate to="/admin/products" replace />} />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="results" element={<ResultsPage />} />
+              <Route path="products" element={<ProductsPage />} />
+              <Route path="orders" element={<OrdersPage />} />
+              <Route path="contact" element={<ContactPage />} />
+            </Route>
+            <Route path="/admin/*" element={<Navigate to="/admin/products" replace />} />
+            <Route path="/clusta-care" element={<ClustaCare />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/faqs" element={<FAQ />} />
+            <Route path="/checkout/success" element={<OrderSuccess />} />
+          </Routes>
+        </BrowserRouter>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

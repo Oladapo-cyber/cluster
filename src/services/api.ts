@@ -1,3 +1,6 @@
+import { getStoredAccessToken } from './auth-storage';
+import { attemptSessionRefresh } from './auth';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY;
 
@@ -18,25 +21,41 @@ export interface ApiRequestInit extends Omit<RequestInit, 'body'> {
 }
 
 export const apiRequest = async <T>(path: string, init: ApiRequestInit = {}): Promise<T> => {
-  const headers = new Headers(init.headers);
+  const performRequest = async (): Promise<Response> => {
+    const headers = new Headers(init.headers);
 
-  const adminKey = localStorage.getItem('admin_api_key') ?? ADMIN_API_KEY;
-  if (adminKey) {
-    headers.set('X-Admin-API-Key', adminKey);
+    const adminKey = localStorage.getItem('admin_api_key') ?? ADMIN_API_KEY;
+    if (adminKey) {
+      headers.set('X-Admin-API-Key', adminKey);
+    }
+
+    const accessToken = getStoredAccessToken();
+    if (accessToken) {
+      headers.set('Authorization', `Bearer ${accessToken}`);
+    }
+
+    if (init.body !== undefined && !(init.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    return fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+      body:
+        init.body === undefined || init.body instanceof FormData
+          ? init.body
+          : JSON.stringify(init.body),
+    });
+  };
+
+  let response = await performRequest();
+
+  if (response.status === 401 && getStoredAccessToken()) {
+    const refreshed = await attemptSessionRefresh();
+    if (refreshed) {
+      response = await performRequest();
+    }
   }
-
-  if (init.body !== undefined && !(init.body instanceof FormData)) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-    body:
-      init.body === undefined || init.body instanceof FormData
-        ? init.body
-        : JSON.stringify(init.body),
-  });
 
   const payload = await response.json().catch(() => null);
 

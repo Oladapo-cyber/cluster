@@ -2,9 +2,16 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../services/api';
-import { createCheckoutOrder, fetchPaystackPublicKey, verifyPaystackPayment } from '../services/checkout';
+import {
+  createAuthenticatedCheckoutOrder,
+  createCheckoutOrder,
+  fetchPaystackPublicKey,
+  verifyPaystackPayment,
+} from '../services/checkout';
 import { launchPaystackCheckout } from '../services/paystack';
+import { fetchMyProfile } from '../services/profile';
 import { fetchProducts } from '../services/products';
 
 interface OrderModalProps {
@@ -14,6 +21,7 @@ interface OrderModalProps {
 
 const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
   const { items, clearCart } = useCart();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
@@ -24,6 +32,7 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isProfilePrefilling, setIsProfilePrefilling] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
@@ -38,6 +47,45 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !isAuthenticated) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsProfilePrefilling(true);
+    setFormData((prev) => ({
+      ...prev,
+      email: user?.email ?? prev.email,
+    }));
+
+    void fetchMyProfile()
+      .then((profile) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setFormData((prev) => ({
+          ...prev,
+          fullName: profile.full_name ?? prev.fullName,
+          phone: profile.phone ?? prev.phone,
+          email: profile.email ?? user?.email ?? prev.email,
+          location: profile.delivery_location ?? prev.location,
+          address: profile.delivery_address ?? prev.address,
+        }));
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (isMounted) {
+          setIsProfilePrefilling(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, isOpen, user?.email]);
 
   if (!isOpen) return null;
 
@@ -85,13 +133,21 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
         };
       });
 
-      const order = await createCheckoutOrder({
-        customer_email: formData.email.trim(),
-        customer_name: formData.fullName.trim(),
-        customer_phone: formData.phone.trim(),
-        delivery_address: `${formData.address.trim()}, Lagos ${formData.location}`,
-        items: orderItems,
-      });
+      const order = isAuthenticated
+        ? await createAuthenticatedCheckoutOrder({
+            customer_name: formData.fullName.trim(),
+            customer_phone: formData.phone.trim(),
+            delivery_address: formData.address.trim(),
+            delivery_location: formData.location.trim(),
+            items: orderItems,
+          })
+        : await createCheckoutOrder({
+            customer_email: formData.email.trim(),
+            customer_name: formData.fullName.trim(),
+            customer_phone: formData.phone.trim(),
+            delivery_address: `${formData.address.trim()}, Lagos ${formData.location}`,
+            items: orderItems,
+          });
 
       const publicKey = await fetchPaystackPublicKey();
       const paymentResult = await launchPaystackCheckout({
@@ -209,8 +265,13 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
                 placeholder="Enter your Email Address"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
+                disabled={isAuthenticated}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#45AAB8] focus:border-transparent outline-none transition-all font-body text-sm"
               />
+
+              {isProfilePrefilling && (
+                <p className="text-xs text-[#6B7280]">Loading saved account details...</p>
+              )}
 
               <div className="relative">
                 <select

@@ -13,6 +13,14 @@ export interface CreateOrderPayload {
   items: CheckoutOrderItemInput[];
 }
 
+export interface CreateAuthenticatedOrderPayload {
+  customer_name?: string;
+  customer_phone?: string;
+  delivery_address?: string;
+  delivery_location?: string;
+  items: CheckoutOrderItemInput[];
+}
+
 export interface CreateOrderResponse {
   id: string;
   total_kobo: number;
@@ -32,6 +40,15 @@ export interface PublicKeyResponse {
 
 export const createCheckoutOrder = async (payload: CreateOrderPayload): Promise<CreateOrderResponse> => {
   return apiRequest<CreateOrderResponse>('/orders', {
+    method: 'POST',
+    body: payload,
+  });
+};
+
+export const createAuthenticatedCheckoutOrder = async (
+  payload: CreateAuthenticatedOrderPayload,
+): Promise<CreateOrderResponse> => {
+  return apiRequest<CreateOrderResponse>('/orders/authenticated', {
     method: 'POST',
     body: payload,
   });
