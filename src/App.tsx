@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Homepage from './pages/Homepage';
 import Shop from './pages/Shop';
@@ -19,35 +19,46 @@ import OrderSuccess from './pages/OrderSuccess';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 
+const HomeRoute = () => {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  if (searchParams.get('v')?.trim().toLowerCase() === 'care') {
+    return <Navigate to={`/clusta-care${location.search}`} replace />;
+  }
+
+  return <Homepage />;
+};
+
 function App() {
   return (
     <AuthProvider>
       <CartProvider>
         <BrowserRouter>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3500,
-            style: {
-              borderRadius: '10px',
-              background: '#45aab8',
-              color: '#F9FAFB',
-              fontSize: '14px',
-            },
-            success: {
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 3500,
               style: {
-                background: '#065F46',
+                borderRadius: '10px',
+                background: '#45aab8',
+                color: '#F9FAFB',
+                fontSize: '14px',
               },
-            },
-            error: {
-              style: {
-                background: '#991B1B',
+              success: {
+                style: {
+                  background: '#065F46',
+                },
               },
-            },
-          }}
-        />
+              error: {
+                style: {
+                  background: '#991B1B',
+                },
+              },
+            }}
+          />
           <Routes>
-            <Route path="/" element={<Homepage />} />
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/shop" element={<Shop />} />
             <Route
               path="/account"

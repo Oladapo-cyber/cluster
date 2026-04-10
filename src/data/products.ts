@@ -248,6 +248,48 @@ export const PRODUCTS: Product[] = [
   }
 ];
 
+const CARE_QR_PRODUCT_SLUGS: Record<string, string> = {
+  '1': 'diabetes',
+  '2': 'stomach-ulcer',
+  '3': 'hepatitis-b',
+  '4': 'cardiac-health',
+  '5': 'typhoid',
+  '6': 'hiv',
+  '7': 'urinary-tract-infection',
+  '8': 'pregnancy',
+  '9': 'ovulation',
+  '10': 'malaria',
+  '11': 'syphilis',
+  '12': 'male-fertility',
+  '13': 'hpv-antigen',
+  '14': 'menopause',
+  '15': 'chlamydia',
+  '16': 'vaginal-ph-infection',
+  '17': 'gonorrhea',
+  '18': 'kidney',
+  '19': 'prostate',
+};
+
+export const getCareProductByQrCode = (productParam: string | null | undefined): Product | undefined => {
+  if (!productParam) {
+    return undefined;
+  }
+
+  const normalizedValue = productParam.trim().toLowerCase();
+  const mappedSlug = CARE_QR_PRODUCT_SLUGS[normalizedValue];
+
+  if (mappedSlug) {
+    return PRODUCTS.find((product) => product.id === mappedSlug);
+  }
+
+  return PRODUCTS.find(
+    (product) =>
+      product.id.toLowerCase() === normalizedValue ||
+      product.backendId?.toLowerCase() === normalizedValue ||
+      product.title.toLowerCase() === normalizedValue,
+  );
+};
+
 /**
  * Get all products for a specific category
  * @param category - The category to filter by (use 'All' to get all products)

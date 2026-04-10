@@ -1,16 +1,58 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { submitClustaCareResult } from '../services/admin';
+import { getCareProductByQrCode } from '../data/products';
+
+const CARE_YOUTUBE_VIDEO_URL = 'https://youtu.be/tMUPNCR35h0?si=neeR7ErupAJcBxuB';
+
+const toYouTubeEmbedUrl = (url: string): string | null => {
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(trimmedUrl);
+    const host = parsedUrl.hostname.replace('www.', '');
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      if (parsedUrl.pathname.startsWith('/embed/')) {
+        const videoId = parsedUrl.pathname.split('/').filter(Boolean)[1];
+        return videoId ? `https://www.youtube-nocookie.com/embed/${videoId}?rel=0` : null;
+      }
+
+      const watchVideoId = parsedUrl.searchParams.get('v');
+      if (watchVideoId) {
+        return `https://www.youtube-nocookie.com/embed/${watchVideoId}?rel=0`;
+      }
+    }
+
+    if (host === 'youtu.be') {
+      const shortVideoId = parsedUrl.pathname.replace('/', '').trim();
+      return shortVideoId ? `https://www.youtube-nocookie.com/embed/${shortVideoId}?rel=0` : null;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
 
 const ClustaCare = () => {
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     testResult: '',
     whatsappNumber: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const scannedProduct = getCareProductByQrCode(searchParams.get('product'));
+  const scannedProductId = searchParams.get('product');
+  const isCareQrVisit = searchParams.get('v')?.trim().toLowerCase() === 'care';
+  const productVideoEmbedUrl = toYouTubeEmbedUrl(CARE_YOUTUBE_VIDEO_URL);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,33 +112,81 @@ const ClustaCare = () => {
 
           {/* Two-Card Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-            {/* Left Card - How It Works */}
-            <div className="bg-white rounded-2xl border border-[#E4E1E1] shadow-lg p-8 flex flex-col items-center justify-center min-h-[400px]">
-              {/* Blood Drop Icon */}
-              <div className="mb-6">
-                <svg 
-                  width="120" 
-                  height="140" 
-                  viewBox="0 0 120 140" 
-                  fill="none" 
-                  xmlns="http://www.w3.org/2000/svg"
+            {/* Left Card - Scanned Product */}
+            <div className="bg-white rounded-2xl border border-[#E4E1E1] shadow-lg p-8 min-h-[400px] flex flex-col justify-between">
+              {scannedProduct ? (
+                <div>
+                  <div className="mb-5">
+                    <span className="inline-flex items-center rounded-full bg-[#E6F4F6] px-3 py-1 text-xs font-semibold text-[#2F8E9B]">
+                      QR scanned product
+                    </span>
+                    <h2 className="mt-3 font-body text-2xl font-bold text-[#000000]">
+                      {scannedProduct.title}
+                    </h2>
+                  </div>
+
+                  <div className="mb-5 overflow-hidden rounded-2xl bg-[#F5F5F5]">
+                    {productVideoEmbedUrl ? (
+                      <iframe
+                        src={productVideoEmbedUrl}
+                        title={`${scannedProduct.title} how it works video`}
+                        className="h-56 w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <img
+                        src={scannedProduct.image}
+                        alt={`${scannedProduct.title} test kit`}
+                        className="h-56 w-full object-cover"
+                      />
+                    )}
+                  </div>
+
+                  <p className="font-body text-base leading-relaxed text-[#4B5563]">
+                    {scannedProduct.description}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-1 flex-col items-center justify-center">
+                  {/* Blood Drop Icon */}
+                  <div className="mb-6">
+                    <svg 
+                      width="120" 
+                      height="140" 
+                      viewBox="0 0 120 140" 
+                      fill="none" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path 
+                        d="M60 10C60 10 20 50 20 85C20 110.405 40.595 131 60 131C79.405 131 100 110.405 100 85C100 50 60 10 60 10Z" 
+                        stroke="#3B82F6" 
+                        strokeWidth="3" 
+                        fill="none"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              )}
+
+              <div className={scannedProduct ? 'mt-8' : 'mt-6 flex flex-col items-center'}>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-[#45AAB8] text-[#45AAB8] rounded-xl font-body font-semibold hover:bg-[#45AAB8] hover:text-white transition-colors"
                 >
-                  <path 
-                    d="M60 10C60 10 20 50 20 85C20 110.405 40.595 131 60 131C79.405 131 100 110.405 100 85C100 50 60 10 60 10Z" 
-                    stroke="#3B82F6" 
-                    strokeWidth="3" 
-                    fill="none"
-                  />
-                </svg>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                  </svg>
+                  Watch How It Works
+                </button>
+
+                {scannedProductId && !scannedProduct && isCareQrVisit && (
+                  <p className="mt-4 text-sm text-[#B45309]">
+                    We could not match product ID {scannedProductId} to a kit.
+                  </p>
+                )}
               </div>
-              
-              {/* Button */}
-              <button className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-[#45AAB8] text-[#45AAB8] rounded-xl font-body font-semibold hover:bg-[#45AAB8] hover:text-white transition-colors">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
-                </svg>
-                Watch How It Works
-              </button>
             </div>
 
             {/* Right Card - Submit Form */}
@@ -105,8 +195,21 @@ const ClustaCare = () => {
                 Submit Your Result
               </h2>
               <p className="font-body text-base text-[#4B5563] mb-6">
-                Share your test result to help improve our products and services
+                {scannedProduct
+                  ? `You are submitting a result for ${scannedProduct.title}.`
+                  : 'Share your test result to help improve our products and services'}
               </p>
+
+              {scannedProduct && (
+                <div className="mb-6 rounded-xl border border-[#D9EEF1] bg-[#F4FBFC] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#2F8E9B] mb-1">
+                    Scanned kit
+                  </p>
+                  <p className="font-body text-base font-bold text-[#000000]">
+                    {scannedProduct.title}
+                  </p>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit}>
                 {/* Test Result Dropdown */}
