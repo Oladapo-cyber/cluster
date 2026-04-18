@@ -111,14 +111,31 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
 
     try {
       const productCatalog = await fetchProducts();
+      const normalize = (value: string) => value.trim().toLowerCase().replace(/\s+/g, ' ');
       const backendIdBySlug = new Map(
         productCatalog
           .filter((product) => Boolean(product.backendId))
           .map((product) => [product.id, product.backendId as string]),
       );
 
+      const backendIdByTitle = new Map(
+        productCatalog
+          .filter((product) => Boolean(product.backendId))
+          .map((product) => [normalize(product.title), product.backendId as string]),
+      );
+
+      const backendIdByExistingId = new Map(
+        productCatalog
+          .filter((product) => Boolean(product.backendId))
+          .map((product) => [String(product.backendId), product.backendId as string]),
+      );
+
       const orderItems = items.map((item) => {
-        const fallbackBackendId = backendIdBySlug.get(String(item.id));
+        const itemId = String(item.id);
+        const fallbackBackendId =
+          backendIdBySlug.get(itemId) ??
+          backendIdByExistingId.get(itemId) ??
+          backendIdByTitle.get(normalize(item.name));
         const productId = item.backendProductId ?? fallbackBackendId;
 
         if (!productId) {
