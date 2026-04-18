@@ -35,6 +35,8 @@ export type Category = typeof CATEGORIES[number];
 export interface Product {
   id: string; // slug
   backendId?: string | null;
+  careQrId?: number | null;
+  careYoutubeUrl?: string | null;
   title: string;
   price: string;
   description: string; // Short description for cards
@@ -270,19 +272,30 @@ const CARE_QR_PRODUCT_SLUGS: Record<string, string> = {
   '19': 'prostate',
 };
 
-export const getCareProductByQrCode = (productParam: string | null | undefined): Product | undefined => {
+export const getCareProductByQrCode = (
+  productParam: string | null | undefined,
+  sourceProducts: Product[] = PRODUCTS,
+): Product | undefined => {
   if (!productParam) {
     return undefined;
   }
 
   const normalizedValue = productParam.trim().toLowerCase();
+  const matchedByCareQrId = sourceProducts.find(
+    (product) => product.careQrId !== undefined && product.careQrId !== null && String(product.careQrId) === normalizedValue,
+  );
+
+  if (matchedByCareQrId) {
+    return matchedByCareQrId;
+  }
+
   const mappedSlug = CARE_QR_PRODUCT_SLUGS[normalizedValue];
 
   if (mappedSlug) {
-    return PRODUCTS.find((product) => product.id === mappedSlug);
+    return sourceProducts.find((product) => product.id === mappedSlug);
   }
 
-  return PRODUCTS.find(
+  return sourceProducts.find(
     (product) =>
       product.id.toLowerCase() === normalizedValue ||
       product.backendId?.toLowerCase() === normalizedValue ||

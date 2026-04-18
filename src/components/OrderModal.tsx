@@ -7,8 +7,10 @@ import { ApiError } from '../services/api';
 import {
   createAuthenticatedCheckoutOrder,
   createCheckoutOrder,
+  fetchDeliveryFees,
   fetchPaystackPublicKey,
   verifyPaystackPayment,
+  type DeliveryFeeDTO,
 } from '../services/checkout';
 import { launchPaystackCheckout } from '../services/paystack';
 import { fetchMyProfile } from '../services/profile';
@@ -18,6 +20,25 @@ interface OrderModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const DEFAULT_DELIVERY_FEES_NAIRA: Record<'Mainland' | 'Island', number> = {
+  Mainland: 3000,
+  Island: 2000,
+};
+
+const toDeliveryLocation = (value: string): 'Mainland' | 'Island' | null => {
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === 'mainland' || normalized === 'lagos mainland') {
+    return 'Mainland';
+  }
+
+  if (normalized === 'island' || normalized === 'lagos island') {
+    return 'Island';
+  }
+
+  return null;
+};
 
 const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
   const { items, clearCart } = useCart();
@@ -35,6 +56,9 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
   const [isProfilePrefilling, setIsProfilePrefilling] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [deliveryFeesByLocation, setDeliveryFeesByLocation] = useState<Record<'Mainland' | 'Island', number>>({
+    ...DEFAULT_DELIVERY_FEES_NAIRA,
+  });
 
   // Prevent scroll when modal is open
   useEffect(() => {
@@ -87,6 +111,36 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
     };
   }, [isAuthenticated, isOpen, user?.email]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    let isMounted = true;
+
+    void fetchDeliveryFees()
+      .then((rows) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const nextFees = { ...DEFAULT_DELIVERY_FEES_NAIRA };
+        rows.forEach((row: DeliveryFeeDTO) => {
+          nextFees[row.location] = row.fee_kobo / 100;
+        });
+        setDeliveryFeesByLocation(nextFees);
+      })
+      .catch(() => {
+        if (isMounted) {
+          setDeliveryFeesByLocation({ ...DEFAULT_DELIVERY_FEES_NAIRA });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const subtotal = items.reduce((acc, item) => {
@@ -94,7 +148,12 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
     const price = parseFloat(priceStr);
     return acc + (isNaN(price) ? 0 : price * item.quantity);
   }, 0);
-  const formattedTotal = `₦${subtotal.toLocaleString()}`;
+  const selectedLocation = toDeliveryLocation(formData.location);
+  const deliveryFee = selectedLocation ? deliveryFeesByLocation[selectedLocation] : 0;
+  const estimatedTotal = subtotal + deliveryFee;
+  const formattedSubtotal = `₦${subtotal.toLocaleString()}`;
+  const formattedDeliveryFee = `₦${deliveryFee.toLocaleString()}`;
+  const formattedTotal = `₦${estimatedTotal.toLocaleString()}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,16 +214,25 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
             customer_name: formData.fullName.trim(),
             customer_phone: formData.phone.trim(),
             delivery_address: formData.address.trim(),
-            delivery_location: formData.location.trim(),
+            delivery_location: toDeliveryLocation(formData.location) ?? undefined,
             items: orderItems,
           })
-        : await createCheckoutOrder({
-            customer_email: formData.email.trim(),
-            customer_name: formData.fullName.trim(),
-            customer_phone: formData.phone.trim(),
-            delivery_address: `${formData.address.trim()}, Lagos ${formData.location}`,
-            items: orderItems,
-          });
+        : await (() => {
+            const location = toDeliveryLocation(formData.location);
+
+            if (!location) {
+              throw new Error('Please select a valid delivery location (Mainland or Island).');
+            }
+
+            return createCheckoutOrder({
+              customer_email: formData.email.trim(),
+              customer_name: formData.fullName.trim(),
+              customer_phone: formData.phone.trim(),
+              delivery_address: formData.address.trim(),
+              delivery_location: location,
+              items: orderItems,
+            });
+          })();
 
       const publicKey = await fetchPaystackPublicKey();
       const paymentResult = await launchPaystackCheckout({
@@ -238,8 +306,21 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
 
             {/* Total Price */}
             <div>
-              <label className="block text-sm font-bold text-gray-900 mb-1">Total Price:</label>
-              <p className="text-xl font-bold text-gray-900 font-body">{formattedTotal}</p>
+              <label className="block text-sm font-bold text-gray-900 mb-2">Price Summary:</label>
+              <div className="space-y-1 text-sm text-gray-700">
+                <p className="flex items-center justify-between">
+                  <span>Subtotal</span>
+                  <span className="font-semibold text-gray-900">{formattedSubtotal}</span>
+                </p>
+                <p className="flex items-center justify-between">
+                  <span>Delivery Fee</span>
+                  <span className="font-semibold text-gray-900">{formattedDeliveryFee}</span>
+                </p>
+                <p className="flex items-center justify-between border-t border-gray-200 pt-2 text-base">
+                  <span className="font-bold text-gray-900">Estimated Total</span>
+                  <span className="font-bold text-gray-900">{formattedTotal}</span>
+                </p>
+              </div>
             </div>
 
             {/* Delivery Form */}

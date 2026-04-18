@@ -5,6 +5,8 @@ export interface ProductDTO {
   id: string;
   name: string;
   slug: string;
+  care_qr_id: number | null;
+  care_youtube_url: string | null;
   description: string | null;
   full_description: string | null;
   image_url: string | null;
@@ -20,6 +22,8 @@ export interface ProductDTO {
 export interface AdminProductInput {
   name: string;
   slug?: string;
+  care_qr_id?: number | null;
+  care_youtube_url?: string | null;
   description?: string | null;
   full_description?: string | null;
   image_url?: string | null;
@@ -64,16 +68,18 @@ const mapApiProduct = (product: ProductDTO): Product => {
   const images = normalizedImages.length > 0 ? normalizedImages : fallbackImage ? [fallbackImage] : [];
 
   return {
-  id: product.slug,
-  backendId: product.id,
-  title: product.name,
-  price: currencyFormatter.format(product.price_kobo / 100),
-  description: product.description ?? '',
-  fullDescription: product.full_description ?? product.description ?? '',
-  categories: normalizeCategory(product.category_name),
-  available: product.is_active,
-  image: images[0] ?? '',
-  images,
+    id: product.slug,
+    backendId: product.id,
+    careQrId: product.care_qr_id,
+    careYoutubeUrl: product.care_youtube_url,
+    title: product.name,
+    price: currencyFormatter.format(product.price_kobo / 100),
+    description: product.description ?? '',
+    fullDescription: product.full_description ?? product.description ?? '',
+    categories: normalizeCategory(product.category_name),
+    available: product.is_active,
+    image: images[0] ?? '',
+    images,
   };
 };
 

@@ -1,12 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { submitClustaCareResult } from '../services/admin';
-import { getCareProductByQrCode } from '../data/products';
-
-const CARE_YOUTUBE_VIDEO_URL = 'https://youtu.be/tMUPNCR35h0?si=neeR7ErupAJcBxuB';
+import { PRODUCTS, getCareProductByQrCode, type Product } from '../data/products';
+import { fetchProducts } from '../services/products';
 
 const toYouTubeEmbedUrl = (url: string): string | null => {
   const trimmedUrl = url.trim();
@@ -43,16 +42,34 @@ const toYouTubeEmbedUrl = (url: string): string | null => {
 
 const ClustaCare = () => {
   const [searchParams] = useSearchParams();
+  const [catalogProducts, setCatalogProducts] = useState<Product[]>(PRODUCTS);
   const [formData, setFormData] = useState({
     testResult: '',
     whatsappNumber: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const scannedProduct = getCareProductByQrCode(searchParams.get('product'));
+  const scannedProduct = useMemo(
+    () => getCareProductByQrCode(searchParams.get('product'), catalogProducts),
+    [catalogProducts, searchParams],
+  );
   const scannedProductId = searchParams.get('product');
   const isCareQrVisit = searchParams.get('v')?.trim().toLowerCase() === 'care';
-  const productVideoEmbedUrl = toYouTubeEmbedUrl(CARE_YOUTUBE_VIDEO_URL);
+  const productVideoEmbedUrl = toYouTubeEmbedUrl(scannedProduct?.careYoutubeUrl ?? '');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void fetchProducts().then((rows) => {
+      if (isMounted) {
+        setCatalogProducts(rows);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

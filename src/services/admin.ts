@@ -21,6 +21,15 @@ export interface ContactInquiryDTO {
   updated_at: string;
 }
 
+export interface DeliveryFeeDTO {
+  id: string;
+  location: 'Mainland' | 'Island';
+  fee_kobo: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AdminOrderSummaryDTO {
   id: string;
   customer_email: string;
@@ -59,6 +68,20 @@ export const updateAdminResult = async (
 
 export const fetchAdminOrders = async (): Promise<AdminOrderSummaryDTO[]> => {
   return apiRequest<AdminOrderSummaryDTO[]>('/admin/orders');
+};
+
+export const fetchAdminDeliveryFees = async (): Promise<DeliveryFeeDTO[]> => {
+  return apiRequest<DeliveryFeeDTO[]>('/admin/delivery-fees');
+};
+
+export const updateAdminDeliveryFee = async (payload: {
+  location: 'Mainland' | 'Island';
+  fee_kobo: number;
+}): Promise<DeliveryFeeDTO> => {
+  return apiRequest<DeliveryFeeDTO>('/admin/delivery-fees', {
+    method: 'PUT',
+    body: payload,
+  });
 };
 
 export const fetchAdminOrderById = async (id: string): Promise<AdminOrderDetailsDTO> => {

@@ -25,12 +25,14 @@ interface ProductFormState {
   id?: string;
   name: string;
   slug: string;
+  care_qr_id: string;
+  care_youtube_url: string;
   description: string;
   full_description: string;
   image_url: string;
   image_url_2: string;
   image_url_3: string;
-  price_kobo: string;
+  price_naira: string;
   category_id: string;
   is_active: boolean;
 }
@@ -38,14 +40,30 @@ interface ProductFormState {
 const defaultFormState: ProductFormState = {
   name: '',
   slug: '',
+  care_qr_id: '',
+  care_youtube_url: '',
   description: '',
   full_description: '',
   image_url: '',
   image_url_2: '',
   image_url_3: '',
-  price_kobo: '',
+  price_naira: '',
   category_id: '',
   is_active: true,
+};
+
+const parseNairaToKobo = (value: string): number | null => {
+  const normalized = value.replace(/,/g, '').trim();
+  if (!/^\d+$/.test(normalized)) {
+    return null;
+  }
+
+  const naira = Number(normalized);
+  if (!Number.isFinite(naira) || naira < 0) {
+    return null;
+  }
+
+  return naira * 100;
 };
 
 type ImageSlot = 1 | 2 | 3;
@@ -312,12 +330,14 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
       id: product.id,
       name: product.name,
       slug: product.slug,
+      care_qr_id: product.care_qr_id !== null ? String(product.care_qr_id) : '',
+      care_youtube_url: product.care_youtube_url ?? '',
       description: product.description ?? '',
       full_description: product.full_description ?? '',
       image_url: imageUrls[0] ?? product.image_url ?? '',
       image_url_2: imageUrls[1] ?? '',
       image_url_3: imageUrls[2] ?? '',
-      price_kobo: String(product.price_kobo),
+      price_naira: String(Math.round(product.price_kobo / 100)),
       category_id: product.category_id ?? '',
       is_active: product.is_active,
     });
@@ -454,9 +474,16 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
     setIsSubmitting(true);
     setErrorMessage(null);
 
-    const parsedPrice = Number(createForm.price_kobo);
-    if (!Number.isInteger(parsedPrice) || parsedPrice < 0) {
-      setErrorMessage('Price must be a whole number in kobo. Example: 17000');
+    const parsedPriceKobo = parseNairaToKobo(createForm.price_naira);
+    const parsedCareQrId = Number(createForm.care_qr_id);
+    if (parsedPriceKobo === null) {
+      setErrorMessage('Price must be a whole number in Naira. Example: 17000');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!Number.isInteger(parsedCareQrId) || parsedCareQrId <= 0) {
+      setErrorMessage('Care QR ID must be a positive whole number. Example: 2');
       setIsSubmitting(false);
       return;
     }
@@ -464,10 +491,12 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
     const payload = {
       name: createForm.name.trim(),
       slug: createForm.slug.trim() || undefined,
+      care_qr_id: parsedCareQrId,
+      care_youtube_url: createForm.care_youtube_url.trim() || null,
       description: createForm.description.trim() || null,
       full_description: createForm.full_description.trim() || null,
       image_urls: extractImageUrls(createForm),
-      price_kobo: parsedPrice,
+      price_kobo: parsedPriceKobo,
       category_id: createForm.category_id.trim() || null,
       is_active: createForm.is_active,
     };
@@ -500,9 +529,16 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
     setIsSubmitting(true);
     setErrorMessage(null);
 
-    const parsedPrice = Number(editForm.price_kobo);
-    if (!Number.isInteger(parsedPrice) || parsedPrice < 0) {
-      setErrorMessage('Price must be a whole number in kobo. Example: 17000');
+    const parsedPriceKobo = parseNairaToKobo(editForm.price_naira);
+    const parsedCareQrId = Number(editForm.care_qr_id);
+    if (parsedPriceKobo === null) {
+      setErrorMessage('Price must be a whole number in Naira. Example: 17000');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!Number.isInteger(parsedCareQrId) || parsedCareQrId <= 0) {
+      setErrorMessage('Care QR ID must be a positive whole number. Example: 2');
       setIsSubmitting(false);
       return;
     }
@@ -510,10 +546,12 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
     const payload = {
       name: editForm.name.trim(),
       slug: editForm.slug.trim() || undefined,
+      care_qr_id: parsedCareQrId,
+      care_youtube_url: editForm.care_youtube_url.trim() || null,
       description: editForm.description.trim() || null,
       full_description: editForm.full_description.trim() || null,
       image_urls: extractImageUrls(editForm),
-      price_kobo: parsedPrice,
+      price_kobo: parsedPriceKobo,
       category_id: editForm.category_id.trim() || null,
       is_active: editForm.is_active,
     };
@@ -700,8 +738,10 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
                 <tr>
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Name</th>
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Slug</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Care QR ID</th>
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Price</th>
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Category</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7280]">YouTube</th>
                       <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Status</th>
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Actions</th>
                 </tr>
@@ -710,7 +750,7 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
                 {isLoading &&
                   Array.from({ length: 6 }).map((_, index) => (
                     <tr key={`skeleton-${index}`} className="border-t border-gray-100">
-                      {Array.from({ length: 6 }).map((__, cellIndex) => (
+                      {Array.from({ length: 8 }).map((__, cellIndex) => (
                         <td key={cellIndex} className="px-4 py-3">
                           <div className="h-4 w-full animate-pulse rounded bg-gray-200" />
                         </td>
@@ -720,7 +760,7 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
 
                 {!isLoading && filteredProducts.length === 0 && (
                   <tr>
-                    <td className="px-4 py-16" colSpan={6}>
+                    <td className="px-4 py-16" colSpan={8}>
                       <div className="flex flex-col items-center justify-center text-center">
                         <Box size={28} className="text-[#9CA3AF]" />
                         <p className="mt-3 text-sm font-semibold text-[#374151]">No products match this view</p>
@@ -735,8 +775,10 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
                     <tr key={product.id} className="border-t border-gray-100 align-top hover:bg-[#FAFAFA]">
                       <td className="px-4 py-3 text-sm font-medium text-[#101828]">{product.name}</td>
                       <td className="px-4 py-3 text-sm text-[#6B7280]">{product.slug}</td>
+                      <td className="px-4 py-3 text-sm text-[#374151]">{product.care_qr_id ?? '-'}</td>
                       <td className="px-4 py-3 text-sm text-[#374151]">{formatNaira(product.price_kobo)}</td>
                       <td className="px-4 py-3 text-sm text-[#374151]">{product.category_name ?? 'No category'}</td>
+                      <td className="px-4 py-3 text-xs text-[#6B7280]">{product.care_youtube_url ? 'Configured' : '-'}</td>
                       <td className="px-4 py-3 text-sm">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -897,15 +939,28 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
             />
             <input
               className="w-full rounded-xl border border-gray-200 bg-[#F9FAFB] px-3 py-2.5 text-sm outline-none focus:border-[#45AAB8]"
-              placeholder="Slug (optional)"
+              placeholder="Slug"
               value={createForm.slug}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, slug: event.target.value }))}
             />
             <input
               className="w-full rounded-xl border border-gray-200 bg-[#F9FAFB] px-3 py-2.5 text-sm outline-none focus:border-[#45AAB8]"
-              placeholder="Price in kobo (e.g. 17000)"
-              value={createForm.price_kobo}
-              onChange={(event) => setCreateForm((prev) => ({ ...prev, price_kobo: event.target.value }))}
+              placeholder="QR ID"
+              value={createForm.care_qr_id}
+              onChange={(event) => setCreateForm((prev) => ({ ...prev, care_qr_id: event.target.value }))}
+              required
+            />
+            <input
+              className="w-full rounded-xl border border-gray-200 bg-[#F9FAFB] px-3 py-2.5 text-sm outline-none focus:border-[#45AAB8]"
+              placeholder="Youtube URL for how it works"
+              value={createForm.care_youtube_url}
+              onChange={(event) => setCreateForm((prev) => ({ ...prev, care_youtube_url: event.target.value }))}
+            />
+            <input
+              className="w-full rounded-xl border border-gray-200 bg-[#F9FAFB] px-3 py-2.5 text-sm outline-none focus:border-[#45AAB8]"
+              placeholder="Product price (e.g. 17000)"
+              value={createForm.price_naira}
+              onChange={(event) => setCreateForm((prev) => ({ ...prev, price_naira: event.target.value }))}
               required
             />
             <textarea
@@ -945,7 +1000,7 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
             <div className="pt-1">
               <button
                 type="submit"
-                className="flex-1 rounded-xl bg-[#45AAB8] py-2.5 text-sm font-semibold text-white hover:bg-[#3d98a5]"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#45AAB8] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#3d98a5]"
                 disabled={isSubmitting || isCreateUploadingImage}
               >
                 Create Product
@@ -1078,15 +1133,30 @@ const AdminProducts = ({ embedded = false }: AdminProductsProps) => {
               />
               <input
                 className="w-full rounded-xl border border-gray-200 bg-[#F9FAFB] px-3 py-2.5 text-sm outline-none focus:border-[#45AAB8]"
-                placeholder="Slug (optional)"
+                placeholder="Slug"
                 value={editForm.slug}
                 onChange={(event) => setEditForm((prev) => (prev ? { ...prev, slug: event.target.value } : prev))}
               />
               <input
                 className="w-full rounded-xl border border-gray-200 bg-[#F9FAFB] px-3 py-2.5 text-sm outline-none focus:border-[#45AAB8]"
-                placeholder="Price in kobo (e.g. 17000)"
-                value={editForm.price_kobo}
-                onChange={(event) => setEditForm((prev) => (prev ? { ...prev, price_kobo: event.target.value } : prev))}
+                placeholder="QR ID"
+                value={editForm.care_qr_id}
+                onChange={(event) => setEditForm((prev) => (prev ? { ...prev, care_qr_id: event.target.value } : prev))}
+                required
+              />
+              <input
+                className="w-full rounded-xl border border-gray-200 bg-[#F9FAFB] px-3 py-2.5 text-sm outline-none focus:border-[#45AAB8]"
+                placeholder="Youtube URL for how it works"
+                value={editForm.care_youtube_url}
+                onChange={(event) =>
+                  setEditForm((prev) => (prev ? { ...prev, care_youtube_url: event.target.value } : prev))
+                }
+              />
+              <input
+                className="w-full rounded-xl border border-gray-200 bg-[#F9FAFB] px-3 py-2.5 text-sm outline-none focus:border-[#45AAB8]"
+                placeholder="Price in Naira (e.g. 17000)"
+                value={editForm.price_naira}
+                onChange={(event) => setEditForm((prev) => (prev ? { ...prev, price_naira: event.target.value } : prev))}
                 required
               />
               <textarea

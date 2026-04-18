@@ -7,6 +7,7 @@ import ProductDetails from './pages/ProductDetails';
 import AdminLayout from './pages/admin/AdminLayout';
 import ResultsPage from './pages/admin/ResultsPage';
 import ProductsPage from './pages/admin/ProductsPage';
+import DeliveryFeesPage from './pages/admin/DeliveryFeesPage';
 import RequireAuth from './components/RequireAuth';
 import AccountProfile from './pages/AccountProfile';
 import OrdersPage from './pages/admin/OrdersPage';
@@ -74,6 +75,7 @@ function App() {
             <Route path="/admin" element={<AdminLayout />}>
               <Route path="results" element={<ResultsPage />} />
               <Route path="products" element={<ProductsPage />} />
+              <Route path="delivery-fees" element={<DeliveryFeesPage />} />
               <Route path="orders" element={<OrdersPage />} />
               <Route path="contact" element={<ContactPage />} />
             </Route>

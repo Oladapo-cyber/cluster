@@ -8,6 +8,7 @@ import {
   Mail,
   Menu,
   ShoppingCart,
+  Truck,
   X,
 } from 'lucide-react';
 import clustaLogo from '../../assets/clustalogo.png';
@@ -16,6 +17,7 @@ const ENV_ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY;
 
 const navItems = [
   { to: '/admin/products', label: 'Products', icon: Boxes },
+  { to: '/admin/delivery-fees', label: 'Delivery Fees', icon: Truck },
   { to: '/admin/results', label: 'Results', icon: BarChart3 },
   { to: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { to: '/admin/contact', label: 'Contact', icon: Mail },
