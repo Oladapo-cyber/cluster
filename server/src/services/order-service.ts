@@ -74,24 +74,59 @@ const resolveCheckoutItemIdentifier = (item: { product_id?: string | undefined; 
   return identifier;
 };
 
+const isUuid = (value: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+const quoteForPostgrestIn = (value: string): string =>
+  `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+
 export const createOrder = async (payload: CreateOrderInput): Promise<CreateOrderResult> => {
   if (payload.items.length === 0) {
     throw new AppError('Order must include at least one item', 400, 'EMPTY_ORDER');
   }
 
-  const { data: products, error: productError } = await supabaseAdmin
+  const lookupIds = new Set<string>();
+  const lookupSlugs = new Set<string>();
+
+  payload.items.forEach((item) => {
+    const identifier = resolveCheckoutItemIdentifier(item);
+    if (isUuid(identifier)) {
+      lookupIds.add(identifier);
+      return;
+    }
+    lookupSlugs.add(identifier);
+  });
+
+  const ids = Array.from(lookupIds);
+  const slugs = Array.from(lookupSlugs);
+
+  let productsQuery = supabaseAdmin
     .from('products')
     .select('id, slug, price_kobo')
     .eq('is_active', true);
 
-  if (productError) {
-    throw new AppError(`Failed to validate products: ${productError.message}`, 500, 'PRODUCT_VALIDATION_FAILED');
+  if (ids.length > 0 && slugs.length > 0) {
+    const idList = ids.join(',');
+    const slugList = slugs.map(quoteForPostgrestIn).join(',');
+    productsQuery = productsQuery.or(`id.in.(${idList}),slug.in.(${slugList})`);
+  } else if (ids.length > 0) {
+    productsQuery = productsQuery.in('id', ids);
+  } else {
+    productsQuery = productsQuery.in('slug', slugs);
   }
+
+  const { data: allProducts, error: fetchError } = await productsQuery;
+
+  if (fetchError) {
+    throw new AppError(`Failed to validate products: ${fetchError.message}`, 500, 'PRODUCT_VALIDATION_FAILED');
+  }
+
+  const products = (allProducts ?? []) as Array<{ id: string; slug: string; price_kobo: number }>;
 
   const productById = new Map<string, { id: string; slug: string; price_kobo: number }>();
   const productBySlug = new Map<string, { id: string; slug: string; price_kobo: number }>();
 
-  (products ?? []).forEach((product: any) => {
+  products.forEach((product) => {
     productById.set(product.id, product);
     productBySlug.set(product.slug, product);
   });

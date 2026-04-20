@@ -24,8 +24,9 @@ export const apiRequest = async <T>(path: string, init: ApiRequestInit = {}): Pr
   const performRequest = async (): Promise<Response> => {
     const headers = new Headers(init.headers);
 
+    const isAdminRequest = path === '/admin' || path.startsWith('/admin/');
     const adminKey = localStorage.getItem('admin_api_key') ?? ADMIN_API_KEY;
-    if (adminKey) {
+    if (isAdminRequest && adminKey) {
       headers.set('X-Admin-API-Key', adminKey);
     }
 
