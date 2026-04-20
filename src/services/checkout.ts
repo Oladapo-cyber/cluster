@@ -1,7 +1,7 @@
 import { apiRequest } from './api';
 
 export interface CheckoutOrderItemInput {
-  product_id: string;
+  product_slug: string;
   quantity: number;
 }
 

@@ -19,12 +19,13 @@ import { userRouter } from './routes/user-routes.js';
 import { adminDeliveryFeesRouter } from './routes/admin-delivery-fees-routes.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { notFoundHandler } from './middleware/not-found.js';
+import { frontendOrigins } from './config/env.js';
 
 const app = express();
 
 app.use(
   cors({
-    origin: env.FRONTEND_ORIGIN,
+    origin: frontendOrigins,
     credentials: true,
   }),
 );

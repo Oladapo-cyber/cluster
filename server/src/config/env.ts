@@ -3,10 +3,17 @@ import { z } from 'zod';
 
 dotenv.config();
 
+const parseOrigins = (value: string | undefined): string[] =>
+  (value ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   FRONTEND_ORIGIN: z.string().url().default('http://localhost:5173'),
+  FRONTEND_ORIGINS: z.string().optional(),
   ADMIN_API_KEY: z.string().min(1),
   SUPABASE_URL: z.string().url(),
   SUPABASE_ANON_KEY: z.string().min(1),
@@ -25,3 +32,9 @@ if (!result.success) {
 }
 
 export const env = result.data;
+export const frontendOrigins = Array.from(
+  new Set([
+    env.FRONTEND_ORIGIN,
+    ...parseOrigins(env.FRONTEND_ORIGINS),
+  ]),
+);

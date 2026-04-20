@@ -11,7 +11,8 @@ export interface CreateOrderInput {
   delivery_location: string;
   user_id?: string;
   items: Array<{
-    product_id: string;
+    product_id?: string | undefined;
+    product_slug?: string | undefined;
     quantity: number;
   }>;
 }
@@ -22,7 +23,8 @@ export interface CreateAuthenticatedOrderInput {
   delivery_address?: string | undefined;
   delivery_location?: string | undefined;
   items: Array<{
-    product_id: string;
+    product_id?: string | undefined;
+    product_slug?: string | undefined;
     quantity: number;
   }>;
 }
@@ -62,34 +64,52 @@ export interface AdminOrderDetailsDTO extends AdminOrderSummaryDTO {
 
 const generateReference = (): string => `ord_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
+const resolveCheckoutItemIdentifier = (item: { product_id?: string | undefined; product_slug?: string | undefined }): string => {
+  const identifier = item.product_id ?? item.product_slug;
+
+  if (!identifier) {
+    throw new AppError('Order item is missing a product identifier', 400, 'INVALID_PRODUCT');
+  }
+
+  return identifier;
+};
+
 export const createOrder = async (payload: CreateOrderInput): Promise<CreateOrderResult> => {
   if (payload.items.length === 0) {
     throw new AppError('Order must include at least one item', 400, 'EMPTY_ORDER');
   }
 
-  const productIds = payload.items.map((item) => item.product_id);
-
   const { data: products, error: productError } = await supabaseAdmin
     .from('products')
-    .select('id, price_kobo')
-    .in('id', productIds);
+    .select('id, slug, price_kobo')
+    .eq('is_active', true);
 
   if (productError) {
     throw new AppError(`Failed to validate products: ${productError.message}`, 500, 'PRODUCT_VALIDATION_FAILED');
   }
 
-  const priceMap = new Map<string, number>((products ?? []).map((product: any) => [product.id, product.price_kobo]));
+  const productById = new Map<string, { id: string; slug: string; price_kobo: number }>();
+  const productBySlug = new Map<string, { id: string; slug: string; price_kobo: number }>();
+
+  (products ?? []).forEach((product: any) => {
+    productById.set(product.id, product);
+    productBySlug.set(product.slug, product);
+  });
   const resolvedDelivery = await resolveDeliveryFeeForLocation(payload.delivery_location);
 
   let items_subtotal_kobo = 0;
   const orderItems = payload.items.map((item) => {
-    const unitPrice = priceMap.get(item.product_id);
-    if (unitPrice === undefined) {
-      throw new AppError(`Invalid product id: ${item.product_id}`, 400, 'INVALID_PRODUCT');
+    const lookup = resolveCheckoutItemIdentifier(item);
+    const matchedProduct = productById.get(lookup) ?? productBySlug.get(lookup);
+
+    if (!matchedProduct) {
+      throw new AppError(`Invalid product identifier: ${lookup}`, 400, 'INVALID_PRODUCT');
     }
+
+    const unitPrice = matchedProduct.price_kobo;
     items_subtotal_kobo += unitPrice * item.quantity;
     return {
-      product_id: item.product_id,
+      product_id: matchedProduct.id,
       quantity: item.quantity,
       unit_price_kobo: unitPrice,
     };

@@ -12,8 +12,11 @@ const createOrderSchema = z.object({
   items: z
     .array(
       z.object({
-        product_id: z.string().uuid(),
+        product_slug: z.string().min(1).optional(),
+        product_id: z.string().uuid().optional(),
         quantity: z.number().int().positive(),
+      }).refine((item) => Boolean(item.product_slug ?? item.product_id), {
+        message: 'Either product_slug or product_id is required',
       }),
     )
     .min(1),
@@ -27,8 +30,11 @@ const createAuthenticatedOrderSchema = z.object({
   items: z
     .array(
       z.object({
-        product_id: z.string().uuid(),
+        product_slug: z.string().min(1).optional(),
+        product_id: z.string().uuid().optional(),
         quantity: z.number().int().positive(),
+      }).refine((item) => Boolean(item.product_slug ?? item.product_id), {
+        message: 'Either product_slug or product_id is required',
       }),
     )
     .min(1),
