@@ -22,11 +22,27 @@ import { notFoundHandler } from './middleware/not-found.js';
 import { frontendOrigins } from './config/env.js';
 
 const app = express();
+const allowedOrigins = new Set(frontendOrigins);
+const normalizeRequestOrigin = (origin: string): string => origin.trim().replace(/\/+$/, '');
 
 app.use(
   cors({
-    origin: frontendOrigins,
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const normalizedOrigin = normalizeRequestOrigin(origin);
+      if (allowedOrigins.has(normalizedOrigin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(null, false);
+    },
     credentials: true,
+    optionsSuccessStatus: 204,
   }),
 );
 app.use(helmet());

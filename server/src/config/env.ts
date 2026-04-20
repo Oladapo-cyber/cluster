@@ -3,10 +3,12 @@ import { z } from 'zod';
 
 dotenv.config();
 
+const normalizeOrigin = (value: string): string => value.trim().replace(/\/+$/, '');
+
 const parseOrigins = (value: string | undefined): string[] =>
   (value ?? '')
     .split(',')
-    .map((origin) => origin.trim())
+    .map((origin) => normalizeOrigin(origin))
     .filter((origin) => origin.length > 0);
 
 const envSchema = z.object({
@@ -34,7 +36,11 @@ if (!result.success) {
 export const env = result.data;
 export const frontendOrigins = Array.from(
   new Set([
-    env.FRONTEND_ORIGIN,
+    normalizeOrigin(env.FRONTEND_ORIGIN),
+    'https://clustadiagnostics.com',
+    'https://www.clustadiagnostics.com',
+    'http://localhost:5173',
+    'http://localhost:4173',
     ...parseOrigins(env.FRONTEND_ORIGINS),
   ]),
 );
