@@ -59,6 +59,18 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
     ...DEFAULT_DELIVERY_FEES_NAIRA,
   });
 
+  const addressValue = formData.address;
+  const trimmedAddress = addressValue.trim();
+  const hasTypedAddress = addressValue.length > 0;
+  const isAddressValid = trimmedAddress.length >= 5;
+  const showAddressHelper = hasTypedAddress && !isAddressValid;
+  const isPayDisabled = isLoading || !isAddressValid;
+  const payButtonToneClass = isLoading
+    ? 'bg-[#93C5FD]'
+    : !isAddressValid
+      ? 'bg-[#BFDBFE]'
+      : 'bg-[#2563EB] hover:bg-[#1D4ED8]';
+
   // Prevent scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -162,6 +174,11 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
       return;
     }
 
+    if (!isAddressValid) {
+      setErrorMessage('Please enter a delivery address with at least 5 characters.');
+      return;
+    }
+
     setErrorMessage(null);
     setInfoMessage(null);
 
@@ -223,7 +240,11 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
       navigate(`/checkout/success?reference=${encodeURIComponent(verification.reference)}`);
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message);
+        if (error.statusCode === 400) {
+          setErrorMessage(error.message || 'Please review your delivery details and try again.');
+        } else {
+          setErrorMessage(error.message || 'Checkout failed. Please try again.');
+        }
       } else if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {
@@ -359,15 +380,20 @@ const OrderModal = ({ isOpen, onClose }: OrderModalProps) => {
                 placeholder="Enter your delivery address"
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#45AAB8] focus:border-transparent outline-none transition-all font-body text-sm"
+                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-[#45AAB8] focus:border-transparent outline-none transition-all font-body text-sm ${
+                  showAddressHelper ? 'border-red-300' : 'border-gray-300'
+                }`}
               />
+              {showAddressHelper && (
+                <p className="text-xs text-red-600">Address too short (minimum 5 characters).</p>
+              )}
             </div>
 
             {/* Pay Button */}
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full bg-[#93C5FD] hover:bg-[#60A5FA] text-white font-bold py-4 rounded-lg transition-colors flex items-center justify-center shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={isPayDisabled}
+              className={`w-full text-white font-bold py-4 rounded-lg transition-colors flex items-center justify-center shadow-md ${payButtonToneClass} disabled:cursor-not-allowed`}
             >
               {isLoading ? (
                 <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
